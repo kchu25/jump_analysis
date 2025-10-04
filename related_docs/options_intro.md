@@ -21,6 +21,8 @@ $V_{\text{market}} = V_{BS}(S, K, t, r, \sigma)$ (section 2)
 | **Implied Vol (IV)** | Market's expected volatility | Solve $V_{\text{market}} = V_{BS}(\sigma)$ | Forward-looking |
 | **IV vs RV** | Pricing dislocation | Compare IV to RV | If IV > RV: options expensive; If IV < RV: options cheap |
 
+Note: 252 -- there are 252 trading days per year
+
 ### The Volatility Surface
 
 **Critical fact**: IV is *not* a single number. Each strike $K$ and time to expiry $T$ has its own IV:
