@@ -55,7 +55,7 @@ $$Ke^{-rt}$$
 - $r$ = Risk-free interest rate (e.g., 5% = 0.05)
 - $t$ = Time to expiration (in years)
 
-**Intuition**: Money in the future is worth less than money today. If $K = 100$ and you receive it in 1 year at 5% interest, its present value is $100 \times e^{-0.05 \times 1} \approx \$95.12$.
+**Intuition**: Money in the future is worth less than money today. If $K = \$100$ and you receive it in 1 year at 5% interest, its present value is $100 \times e^{-0.05 \times 1} \approx \$95.12$.
 
 **Example**:
 - Strike $K = \$100$
@@ -186,13 +186,150 @@ Probability
 
 ## The Five Inputs and Their Impact
 
-| Input | Symbol | Meaning | Effect on Put Value |
-|-------|--------|---------|---------------------|
-| **Stock Price** | $S_0$ | Current market price | ↑ $S_0$ → ↓ Put value |
-| **Strike Price** | $K$ | Exercise price | ↑ $K$ → ↑ Put value |
-| **Time to Expiry** | $t$ | Time remaining (years) | ↑ $t$ → ↑ Put value (usually) |
-| **Volatility** | $\sigma$ | Expected fluctuation | ↑ $\sigma$ → ↑ Put value |
-| **Interest Rate** | $r$ | Risk-free rate | ↑ $r$ → ↓ Put value (small effect) |
+| Input | Symbol | Meaning | Effect on Put Value | How Known? |
+|-------|--------|---------|---------------------|------------|
+| **Stock Price** | $S_0$ | Current market price | ↑ $S_0$ → ↓ Put value | **Observable** (real-time) |
+| **Strike Price** | $K$ | Exercise price | ↑ $K$ → ↑ Put value | **Fixed** (in contract) |
+| **Time to Expiry** | $t$ | Time remaining (years) | ↑ $t$ → ↑ Put value (usually) | **Observable** (count down) |
+| **Interest Rate** | $r$ | Risk-free rate | ↑ $r$ → ↓ Put value (small effect) | **Observable** (Treasury rate) |
+| **Volatility** | $\sigma$ | Expected future fluctuation | ↑ $\sigma$ → ↑ Put value | **UNKNOWN** (must estimate!) |
+
+### The Volatility Problem: An Unknown Variable
+
+**Critical insight**: Volatility $\sigma$ in Black-Scholes refers to **future volatility** (how much the stock will move going forward), which is **unknowable**.
+
+This creates a fundamental problem:
+- Four inputs ($S_0$, $K$, $t$, $r$) are directly observable
+- One input ($\sigma$) is about the future and cannot be directly observed
+- Yet BS requires all five inputs to calculate option price
+
+### Two Approaches to Handle Unknown Volatility
+
+#### Approach 1: Historical Volatility → Estimate BS Price
+
+**Use past volatility to predict future volatility:**
+
+```
+Step 1: Calculate historical (realized) volatility
+        σ_RV = √252 × std(past daily returns)
+        Example: σ_RV = 28% (based on last 30 days)
+
+Step 2: Assume future ≈ past
+        σ_future ≈ σ_RV = 28%
+
+Step 3: Plug into BS formula
+        V_BS(S₀, K, t, r, σ=0.28) = $3.20
+
+Step 4: Compare to market
+        Market price = $3.05
+        Your estimate = $3.20
+        → Option looks cheap! (if you trust your σ estimate)
+```
+
+**Problem**: Past volatility may not equal future volatility (e.g., after earnings, news events, regime changes).
+
+---
+
+#### Approach 2: Market Price → Solve for Implied Volatility (Most Common)
+
+**Work backwards from observed market price:**
+
+```
+Known:
+- Market price = $3.05 (what the option actually trades at)
+- S₀ = $98, K = $100, t = 1 day, r = 5%
+
+Unknown:
+- What σ makes BS match market price?
+
+Solve: Find σ such that V_BS(S₀, K, t, r, σ) = $3.05
+
+Result: σ_IV = 42% (implied volatility)
+```
+
+**This is called Implied Volatility (IV)** - the market's consensus expectation of future volatility.
+
+**Key equation**:
+$\text{Market Price} = V_{BS}(S_0, K, t, r, \sigma_{IV})$
+
+Solve for $\sigma_{IV}$ using numerical methods (Newton-Raphson, bisection).
+
+---
+
+### Why Implied Volatility is the Market Standard
+
+Rather than guessing future volatility, traders:
+1. **Observe market price** (what buyers and sellers agree on)
+2. **Back out the implied volatility** (what $\sigma$ is "implied" by that price)
+3. **Use IV as the market's forecast** of future volatility
+
+**Think of it this way:**
+- You don't know future volatility directly
+- But the collective wisdom of all market participants (who are risking real money) is embedded in option prices
+- IV extracts that collective forecast
+
+**Example interpretation:**
+- Put trading at $3.05 → IV = 42%
+- This means: "The market expects this stock to move ±42% annually"
+- Historical volatility was only 28% → market expects MORE volatility than usual
+- This explains why the option is expensive
+
+---
+
+### The Circular Logic Problem
+
+**It seems circular:**
+1. Need $\sigma$ to calculate option price using BS
+2. But we use option price to calculate $\sigma$ (IV)
+
+**Resolution**: There are two different uses of BS:
+
+| Use Case | Known | Unknown | Purpose |
+|----------|-------|---------|---------|
+| **Pricing** | $S_0, K, t, r, \sigma$ | Option price | Estimate what option should cost |
+| **Calibration** | $S_0, K, t, r$, Market price | $\sigma$ (IV) | Understand market's vol expectation |
+
+**In practice**: Market makers use approach #1 (estimate $\sigma$ → price options). Traders use approach #2 (observe prices → extract IV).
+
+---
+
+### What Determines Implied Volatility?
+
+Since IV comes from market prices, what makes it go up or down?
+
+| Factor | Effect on IV | Example |
+|--------|-------------|---------|
+| **Recent volatility** | Past spikes → Higher IV | After a jump, IV elevated |
+| **Upcoming events** | Earnings, FDA approval → Higher IV | Pre-earnings IV spike |
+| **Market stress** | VIX high → All IVs rise | 2008 crisis, COVID crash |
+| **Supply/demand** | More put buyers → Higher put IV | Fear drives put demand |
+| **Time to event** | Close to event → IV peaks | Day before earnings |
+
+**For your strategy**: 
+- Morning jump → Recent volatility high → IV spikes to 45%
+- Normal times: IV around 30%
+- You're buying when IV is 50% above normal → overpaying by ~40%
+
+---
+
+### Historical vs Implied Volatility: The Trading Opportunity
+
+Many strategies exploit the gap between RV (what happened) and IV (what market expects):
+
+$\text{Vol Premium/Discount} = \sigma_{IV} - \sigma_{RV}$
+
+| Situation | Interpretation | Strategy |
+|-----------|----------------|----------|
+| $\sigma_{IV} > \sigma_{RV}$ | Options expensive (market expects more vol) | Sell options, expect IV crush |
+| $\sigma_{IV} < \sigma_{RV}$ | Options cheap (market underestimates vol) | Buy options, expect IV expansion |
+| $\sigma_{IV} \approx \sigma_{RV}$ | Fair pricing | Directional trades only |
+
+**Your situation after jump:**
+- RV (last 30 days): 28%
+- IV (post-jump): 45%
+- Vol premium: +17 percentage points
+- **Implication**: Market expects continued volatility, but often volatility mean-reverts
+- **Risk**: You're buying expensive options (high IV) that might experience "IV crush" (drop back to normal levels)
 
 ### Why Volatility Increases Put Value?
 
@@ -294,10 +431,7 @@ This is why **implied volatility varies by strike and expiry** (the volatility s
 **Black-Scholes answers**: What's the fair price for uncertain future payoffs?
 
 **The formula structure**:
-<!-- $\text{Put Value} = \underbrace{\text{PV}(K) \times \mathbb{P}(\text{exercise})}_{\mathrm{Money you get}} - \underbrace{S_0 \times \mathbb{P}^*(\text{risk-adjusted})}_{\mathrm{Stock you give}}$ -->
-
-$$\text{Put Value} = \underbrace{\text{PV}(K) \times \mathbb{P}(\text{exercise})}_{\mathrm{Money\ you\ get}} - \underbrace{S_0 \times \mathbb{P}^*(\text{risk-adjusted})}_{\mathrm{Stock\ you\ give}}$$
-
+$\text{Put Value} = \underbrace{\text{PV}(K) \times \mathbb{P}(\text{exercise})}_{\text{Money you get}} - \underbrace{S_0 \times \mathbb{P}^*(\text{risk-adjusted})}_{\text{Stock you give}}$
 
 Where:
 - $\text{PV}(K)$ = **Present Value** of strike price = $Ke^{-rt}$ (future money discounted to today)
