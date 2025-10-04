@@ -15,7 +15,7 @@
     sell_after_hours=3.0)
 
 
-compute_jump_trade_stats(7, 1, 7, 30, "TSLL"; 
+@time compute_jump_trade_stats(7, 1, 7, 30, "TSLL"; 
                          threshold_pct=1.5, 
                          window_size=20, 
                          time_start="9:45", 
