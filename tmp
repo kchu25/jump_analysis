@@ -1,0 +1,2 @@
+
+$$\text{Put Value} = \underbrace{\text{PV(Strike)} \times P(\text{exercise})}_{\mathrm{Money\ you\ get}} - \underbrace{\text{Stock} \times P(\text{risk-adjusted})}_{\mathrm{Stock\ you\ give}}$$
