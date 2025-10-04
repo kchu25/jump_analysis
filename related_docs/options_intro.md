@@ -6,7 +6,7 @@
 
 ### Mathematical Definition
 Given market price $V_{\text{market}}$ for an option, IV is the $\sigma$ that solves:
-$V_{\text{market}} = V_{BS}(S, K, t, r, \sigma)$
+$V_{\text{market}} = V_{BS}(S, K, t, r, \sigma)$ (section 2)
 
 **There is no closed-form solution** — IV must be solved numerically (e.g., Newton-Raphson, bisection).
 
@@ -73,7 +73,7 @@ For algo trading:
 
 | Greek | Formula | Range | Intuition | Algo Relevance |
 |-------|---------|-------|-----------|----------------|
-| **Delta (Δ)** | $\Delta = \frac{\partial V}{\partial S}$ | Put: $-1 < \Delta < 0$ | $1 stock move = $\|\Delta\|$ option move | Hedge ratio; Delta-neutral = no directional exposure |
+| **Delta (Δ)** | $\Delta = \frac{\partial V}{\partial S}$ | Put: $-1 < \Delta < 0$ | 1 usd stock move = $\|\Delta\|$ option move | Hedge ratio; Delta-neutral = no directional exposure |
 | **Gamma (Γ)** | $\Gamma = \frac{\partial^2 V}{\partial S^2}$ | Always positive | How fast Delta changes; high $\Gamma$ = unstable position | Peaks ATM near expiry; large moves blow up position |
 | **Theta (θ)** | $\theta = \frac{\partial V}{\partial t}$ | Typically $-0.01$ to $-0.50$ ($/day) | Lose $\|\theta\|$ per day from time passing | 0DTE options lose 20-50% in hours; theta kills same-day trades |
 | **Vega (ν)** | $\nu = \frac{\partial V}{\partial \sigma}$ | Typically $0.01$ to $0.30$ ($/1% IV) | IV spike = option price up (even if stock flat) | Right on direction but lose on IV crush = common trap |
@@ -96,16 +96,23 @@ For algo trading:
 
 ## 2. Black-Scholes Framework
 
+The Black-Scholes model provides closed-form solutions for European option prices. This is the $V_{BS}$ referenced in Section 0.
+
 ### Call and Put Pricing
 
-$$C = S_0 N(d_1) - Ke^{-rt}N(d_2)$$
+**Call option**:
+$V_{BS}^{\text{call}}(S_0, K, t, r, \sigma) = S_0 N(d_1) - Ke^{-rt}N(d_2)$
 
-$$P = Ke^{-rt}N(-d_2) - S_0N(-d_1)$$
+**Put option**:
+$V_{BS}^{\text{put}}(S_0, K, t, r, \sigma) = Ke^{-rt}N(-d_2) - S_0N(-d_1)$
 
 Where:
-$$d_1 = \frac{\ln(S_0/K) + (r + \sigma^2/2)t}{\sigma\sqrt{t}}$$
+$d_1 = \frac{\ln(S_0/K) + (r + \sigma^2/2)t}{\sigma\sqrt{t}}$
 
-$$d_2 = d_1 - \sigma\sqrt{t}$$
+$d_2 = d_1 - \sigma\sqrt{t}$
+
+And $N(\cdot)$ is the cumulative standard normal distribution function:
+$N(x) = \frac{1}{\sqrt{2\pi}} \int_{-\infty}^{x} e^{-z^2/2} dz$
 
 ### Parameters
 
