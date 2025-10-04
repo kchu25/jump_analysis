@@ -4,7 +4,7 @@
 
 | Greek | Formula | Range | Intuition | Algo Relevance |
 |-------|---------|-------|-----------|----------------|
-| **Delta (Δ)** | $\Delta = \frac{\partial V}{\partial S}$ | Put: $-1 < \Delta < 0$ | \$1 stock move = $\|\Delta\|$ option move | Hedge ratio; Delta-neutral = no directional exposure |
+| **Delta (Δ)** | $\Delta = \frac{\partial V}{\partial S}$ | Put: $-1 < \Delta < 0$ | 1 usd stock move = $\|\Delta\|$ option move | Hedge ratio; Delta-neutral = no directional exposure |
 | **Gamma (Γ)** | $\Gamma = \frac{\partial^2 V}{\partial S^2}$ | Always positive | How fast Delta changes; high $\Gamma$ = unstable position | Peaks ATM near expiry; large moves blow up position |
 | **Theta (θ)** | $\theta = \frac{\partial V}{\partial t}$ | Always negative (long) | Lose $\|\theta\|$ per day from time passing | 0DTE options lose 20-50% in hours; theta kills same-day trades |
 | **Vega (ν)** | $\nu = \frac{\partial V}{\partial \sigma}$ | Always positive (long) | IV spike = option price up (even if stock flat) | Right on direction but lose on IV crush = common trap |
