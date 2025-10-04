@@ -2,10 +2,10 @@
     include("try_mag_jump.jl")
 
     month = 7
-    day = 2
+    day = 21
     ticker = "TSLL"
     threshold = 1.5
-    window_size = 25
+    window_size = 20
 
     jump_indices, returns, plt, trades = 
     visualize_magnitude_jumps(month, day, ticker, threshold_pct=threshold, 
