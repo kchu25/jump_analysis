@@ -537,3 +537,219 @@ Net gain: $0.75
 This is why your strategy has a 60-80% cost headwind — all visible through the BS framework.
 
 You don't calculate the formula, but you **must understand it** to trade options successfully.
+
+---
+
+## Critical Clarification: BS Calculates Present Value at ANY Moment
+
+### A Common Confusion
+
+**Wrong thinking**: "BS is for pricing when I buy, then I need a different formula when I sell"
+
+**Correct thinking**: "BS prices the option at ANY moment in time. Market makers run it continuously. I see the results as Bid/Ask prices"
+
+### The Market Pricing Loop
+
+Every second, this is happening:
+
+```
+Market Makers → Run BS with current data → Update Bid/Ask → You see prices
+      ↑                                                            ↓
+      └─────────── Adjust continuously as inputs change ───────────┘
+```
+
+**You never calculate BS yourself** - you just see the final Bid/Ask prices that result from these calculations.
+
+---
+
+### BS Works at Every Point in Time
+
+Black-Scholes gives you the option's **present value** at any moment, whether:
+- 9:30 AM when you're **buying**
+- 11:00 AM when you're **monitoring**  
+- 2:00 PM when you're **selling**
+
+The formula continuously recalculates as inputs change:
+- Stock price $S_0$ (updates every second)
+- Time remaining $t$ (counts down continuously)
+- Implied volatility $\sigma$ (changes with market conditions)
+
+---
+
+### Example: Your Trade Timeline
+
+Let's walk through what's happening behind the scenes:
+
+#### 9:30 AM - You Want to Buy
+
+**Market maker's BS calculation:**
+```
+Inputs:
+- Stock price S₀ = $100
+- Strike K = $98
+- Time to close t = 6.5 hours = 6.5/(24×252) ≈ 0.00107 years
+- Implied volatility σ = 45% (elevated after jump)
+- Risk-free rate r = 5%
+
+BS Output: Put value = $3.05
+```
+
+**What you see on screen:**
+```
+Put Option $98 Strike
+Bid: $2.95
+Ask: $3.05
+
+[Buy Button]
+```
+
+**You click "Buy" and pay $3.05** - no calculation needed on your part.
+
+---
+
+#### 11:00 AM - Stock Drops, You Check
+
+**Market maker's BS calculation (automatically updated):**
+```
+Inputs:
+- Stock price S₀ = $96 ← Changed!
+- Strike K = $98
+- Time to close t = 5 hours = 5/(24×252) ≈ 0.00082 years ← Less time
+- Implied volatility σ = 38% ← Decreased!
+- Risk-free rate r = 5%
+
+BS Output: Put value = $3.80
+```
+
+**What you see:**
+```
+Put Option $98 Strike
+Bid: $3.75
+Ask: $3.85
+Your Position: +$0.75 (bought at $3.05)
+```
+
+---
+
+#### 2:00 PM - You Want to Sell
+
+**Market maker's BS calculation:**
+```
+Inputs:
+- Stock price S₀ = $95 ← Dropped more!
+- Strike K = $98
+- Time to close t = 2 hours = 2/(24×252) ≈ 0.00033 years ← Much less time
+- Implied volatility σ = 35% ← Normalized
+- Risk-free rate r = 5%
+
+BS Output: Put value = $4.20
+```
+
+**What you see:**
+```
+Put Option $98 Strike
+Bid: $4.15
+Ask: $4.25
+
+[Sell Button]
+```
+
+**You click "Sell" and receive $4.15** - again, no calculation needed.
+
+**Your profit:** $4.15 - $3.05 = **$1.10 per share**
+
+---
+
+### How BS Was Used Throughout
+
+| Time | What Changed | BS Recalculated | Result | Your Action |
+|------|--------------|-----------------|---------|-------------|
+| **9:30 AM** | Jump happened, IV spiked | Put worth $3.05 | Ask = $3.05 | You buy |
+| **9:31 AM** | Stock moved slightly | Put worth $3.02 | Bid/Ask updates | You hold |
+| **9:45 AM** | Stock dropped $1 | Put worth $3.35 | Bid/Ask updates | You hold |
+| **11:00 AM** | Stock at $96, IV dropped | Put worth $3.80 | Bid/Ask updates | You monitor |
+| **2:00 PM** | Stock at $95, time running out | Put worth $4.20 | Bid = $4.15 | You sell |
+
+**Every single price** (whether you're buying, holding, or selling) comes from BS being calculated with current market conditions.
+
+---
+
+### Why Understanding BS Matters (Even Though You Don't Calculate It)
+
+#### When Buying (9:30 AM):
+
+**You see:** Ask = $3.05
+
+**BS knowledge helps:**
+- "IV is 45%, but historical average is 30% → I'm overpaying by ~40%"
+- "Theta is -$0.40/day → I lose $0.05/hour from time decay"
+- "Delta is -0.35 → I need $3 drop to make $1"
+
+**Decision:** "Worth it only if I expect a big, fast drop"
+
+---
+
+#### During Trade (11:00 AM):
+
+**You see:** Current value $3.80 (up $0.75)
+
+**BS knowledge helps:**
+- "Stock dropped $4, but my put only gained $0.75... why?"
+- "IV dropped from 45% to 38% (7% decrease)"
+- "Vega is $0.12, so -7% IV cost me -7 × $0.12 = -$0.84"
+- "I lost $0.10 to theta (1.5 hours elapsed)"
+- "Stock move gave me ~$1.40, but IV crush + theta cost $0.94"
+
+**Understanding:** "I'm fighting IV crush - need to sell soon before it drops more"
+
+---
+
+#### When Selling (2:00 PM):
+
+**You see:** Bid = $4.15
+
+**BS knowledge helps:**
+- "Stock dropped $5 total, my put should be worth more..."
+- "But time is almost up (high theta cost)"
+- "And IV dropped from 45% to 35% (10% total decline)"
+- "Profit is less than expected, but IV normalized - good time to exit"
+
+**Decision:** "Take the $1.10 profit before theta eats more"
+
+---
+
+### Analogy: Like Stock Prices
+
+Think of it like stock prices:
+
+**Stocks:**
+- Price updates every second based on supply/demand
+- You see: "AAPL: $175.50"
+- You don't calculate this price - market determines it
+- But understanding valuation (P/E, growth, etc.) helps you know if it's expensive
+
+**Options:**
+- Price updates every second based on BS inputs
+- You see: "Put: Bid $4.15 / Ask $4.25"
+- You don't calculate BS - market makers do it
+- But understanding BS (IV, theta, delta, etc.) helps you know if it's expensive
+
+---
+
+### The Bottom Line
+
+**Three Key Points:**
+
+1. **BS is continuous**: It calculates present value at ANY moment (buying, holding, selling)
+
+2. **Market does the math**: Your broker/exchange runs BS automatically and shows you Bid/Ask
+
+3. **You use the framework**: Even without calculating, BS helps you:
+   - Know when you're overpaying (high IV)
+   - Estimate your edge (delta vs theta)
+   - Understand P&L (why gains are less than expected)
+   - Make better decisions (which strike, when to exit)
+
+**For your strategy:** Every time you check the option price (whether buying at 9:30 AM or selling at 2 PM), that price came from BS being calculated with current conditions. You see the result, not the formula.
+
+Understanding BS doesn't mean calculating it yourself - it means understanding **why** the prices are what they are and **how** they'll change as market conditions evolve.
