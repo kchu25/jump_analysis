@@ -308,3 +308,232 @@ $$\text{Put Value} = \underbrace{\text{PV(Strike)} \times P(\text{exercise})}_{\
 - Understanding how inputs affect option prices
 
 The formula is elegant because it reduces a complex stochastic problem (uncertain future stock prices) to a simple closed-form solution based on five observable inputs.
+
+---
+
+## How This is Actually Used in Trading
+
+### You DON'T Calculate Black-Scholes When Trading
+
+**Important**: As a trader, you **almost never directly calculate** the Black-Scholes formula. Here's what actually happens:
+
+#### When You Want to Buy a Put:
+
+```
+Your broker/exchange shows:
+Put Option: Strike $100, Expiry Oct 15
+Bid: $2.95
+Ask: $3.05
+```
+
+**You see prices, not formulas**. Market makers have already priced the options using Black-Scholes (or more sophisticated models).
+
+**You simply**:
+1. Look at the Ask price ($3.05)
+2. Decide if it's worth it for your strategy
+3. Click "Buy"
+4. Pay $3.05 per share ($305 per contract)
+
+**No calculation required** — the market has done the pricing for you.
+
+---
+
+### So Why Learn Black-Scholes?
+
+Even though you don't calculate it manually, BS is essential for understanding **what drives option prices** and **how to evaluate if an option is expensive or cheap**.
+
+#### 1. Understanding What You're Paying For
+
+When you see a put option costs $3.05, Black-Scholes tells you this price reflects:
+
+| Component | What It Means | How to Check |
+|-----------|--------------|--------------|
+| **Intrinsic Value** | $\max(K - S_0, 0)$ | If stock is $98 and strike is $100: intrinsic = $2 |
+| **Time Value** | Premium - Intrinsic | $3.05 - $2 = $1.05 time value |
+| **Implied Volatility** | Market's expectation of future moves | High IV after jumps = expensive options |
+| **Time Decay (Theta)** | How much you lose per day | Same-day options bleed fast |
+
+**Practical use**: 
+- If IV is historically high (IVR > 70%), you're overpaying
+- If theta is large ($-0.30/day), your option bleeds $30/day on a 100-share contract
+- This tells you whether the trade makes sense
+
+---
+
+#### 2. Working Backwards: Finding Implied Volatility
+
+This is the **primary real-world use** of Black-Scholes for traders.
+
+**The Process**:
+
+```
+Known:
+- Market price of put = $3.05 (observed)
+- Stock price S₀ = $98
+- Strike K = $100
+- Time t = 1 day (0.0027 years)
+- Rate r = 0.05
+
+Unknown:
+- What volatility (σ) does the market expect?
+```
+
+**Solve**: Find σ such that $V_{BS}(S_0, K, t, r, \sigma) = \$3.05$
+
+This gives you **Implied Volatility (IV)**.
+
+**Why this matters**:
+- If IV = 45% but historical RV = 25%, options are **expensive** (market expects volatility)
+- If IV = 20% but RV = 35%, options are **cheap** (market is underpricing volatility)
+
+**For your strategy**: After a morning jump, IV spikes. You're buying when IV might be 50-60%, but normal IV might be 30%. This means you're overpaying by ~40-60%.
+
+---
+
+#### 3. Estimating the Greeks Without Calculation
+
+Black-Scholes derivatives give you the Greeks. Your broker displays these:
+
+```
+Put Option Display:
+Price: $3.05
+Delta: -0.35
+Gamma: 0.08
+Theta: -$0.28/day
+Vega: $0.12
+```
+
+**You don't calculate these** — your platform does. But understanding BS helps you interpret them:
+
+| Greek | What You Check | Trading Decision |
+|-------|----------------|------------------|
+| **Delta** | If -0.35, stock drops $1 → put gains ~$0.35 | Need $10 drop to gain $3.50 |
+| **Theta** | Losing $0.28/day | In 3 hours (1/8 day) you lose ~$0.035 |
+| **Vega** | Gains $0.12 per 1% IV increase | If IV drops 5%, you lose $0.60 even if stock doesn't move |
+| **Gamma** | How fast delta changes | High gamma near expiry = unstable position |
+
+**Practical decision**: If theta is -$0.28/day and you're trading same-day, you need the stock to drop quickly. If it trades sideways for 2 hours, you've already lost ~$0.12 to time decay.
+
+---
+
+#### 4. Comparing Options: Which Strike to Buy?
+
+You're deciding between three puts. Your broker shows:
+
+| Strike | Premium | Delta | Theta | IV | Break-Even |
+|--------|---------|-------|-------|----|-----------| 
+| $100 (ITM) | $5.50 | -0.75 | -$0.45 | 40% | Stock → $94.50 |
+| $98 (ATM) | $3.05 | -0.50 | -$0.35 | 42% | Stock → $94.95 |
+| $95 (OTM) | $1.20 | -0.25 | -$0.15 | 45% | Stock → $93.80 |
+
+**Without BS knowledge**: You might just pick the cheapest.
+
+**With BS knowledge**: You understand:
+- OTM is cheaper but needs a BIGGER move (delta only -0.25)
+- OTM has higher IV (45% vs 40%) = more expensive per unit of probability
+- ATM has highest theta = bleeds fastest
+- ITM has better delta but costs more upfront
+
+**Your decision** depends on:
+- How confident are you in a big drop? → OTM
+- Want balanced risk/reward? → ATM
+- High conviction, willing to pay? → ITM
+
+BS framework helps you understand these trade-offs.
+
+---
+
+#### 5. Deciding When to Exit
+
+You bought the put at $3.05. Stock drops to $96. Your put is now worth $3.80.
+
+**Question**: Sell now (+$0.75 profit) or hold for more?
+
+**BS thinking helps**:
+
+```
+Time passed: 2 hours (still 6 hours to close)
+Theta cost: ~$0.10 already eaten
+Current IV: Dropped from 42% to 38% (vol crush)
+Vega loss: -4% IV × $0.12 = -$0.48
+
+Without IV drop, your put would be worth: $3.80 + $0.48 = $4.28
+Stock move gave you: $4.28 - $3.05 = $1.23
+But IV crush cost you: $0.48
+Net gain: $0.75
+```
+
+**Insight**: You made money on direction, but volatility crush cost you 40% of potential gains. This explains why your profit is less than expected.
+
+**Decision**: If IV is still elevated (IVR > 50%), it might drop further. Sell now. If IV has normalized, you can hold.
+
+---
+
+### The Real Trading Workflow
+
+#### Before the Trade:
+
+1. **Check IV Percentile** (IVR or IV Rank)
+   - IVR < 30% → Options are cheap historically
+   - IVR > 70% → Options are expensive historically
+   - **Your situation**: Post-jump IVR is probably 80-90% → very expensive
+
+2. **Estimate Required Move**
+   - Use Delta: If delta = -0.35, you need ~$3 drop per $1 profit
+   - Check break-even: Strike - Premium
+   - **Your situation**: Need 3-5% drop in hours → high bar
+
+3. **Assess Time Decay**
+   - Look at Theta
+   - Calculate: How much will I lose per hour?
+   - **Your situation**: 0DTE options, theta might be -$0.50/day = -$0.02/hour
+
+#### During the Trade:
+
+4. **Monitor Greeks, Not Just Price**
+   - Is delta changing (gamma risk)?
+   - Is IV dropping (vega risk)?
+   - How much theta have I paid?
+
+5. **Set Exit Rules**
+   - Target profit: "Exit if I make 50% ($1.50 on $3 put)"
+   - Stop loss: "Exit if down 30% (put drops to $2.10)"
+   - Time stop: "Exit at 2pm regardless" (avoid last-hour theta burn)
+
+#### After the Trade:
+
+6. **Post-Trade Analysis**
+   - Did IV crush hurt me?
+   - Was theta worse than expected?
+   - Did I actually need that strike, or should I have gone ATM?
+
+**Black-Scholes framework** guides all these decisions, even though you never manually calculate the formula.
+
+---
+
+### Summary: BS is a Framework, Not a Calculator
+
+| What You DON'T Do | What You DO Do |
+|-------------------|----------------|
+| Calculate BS formula by hand | Check IV percentile (expensive vs cheap?) |
+| Derive the PDE | Compare strikes using Delta/Theta |
+| Compute $N(d_1)$ manually | Understand why IV spike makes options expensive |
+| Solve for option price | Work backwards to find implied volatility |
+| Memorize formulas | Use Greeks to estimate P&L and risk |
+
+**The key insight**: Black-Scholes is the **language** of options markets. Market makers use it to quote prices. Your broker uses it to calculate Greeks. You use it to:
+- Understand what you're paying for
+- Evaluate if options are expensive (high IV)
+- Estimate how much you'll make/lose
+- Decide which strike/expiry to trade
+- Know when to exit
+
+**For your strategy**: BS tells you that buying puts right after a morning jump means:
+1. High IV → You overpay
+2. Short time → Theta kills you fast  
+3. Need significant move → Delta requires big drop
+4. IV will likely drop → Vega works against you
+
+This is why your strategy has a 60-80% cost headwind — all visible through the BS framework.
+
+You don't calculate the formula, but you **must understand it** to trade options successfully.
