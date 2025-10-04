@@ -296,7 +296,7 @@ This is why **implied volatility varies by strike and expiry** (the volatility s
 **The formula structure**:
 <!-- $\text{Put Value} = \underbrace{\text{PV}(K) \times \mathbb{P}(\text{exercise})}_{\mathrm{Money you get}} - \underbrace{S_0 \times \mathbb{P}^*(\text{risk-adjusted})}_{\mathrm{Stock you give}}$ -->
 
-$$\text{Put Value} = \underbrace{\text{PV}(K) \times \mathbb{P}(\text{exercise})}_{\mathrm{Money\ you\ get}} - \underbrace{S_0 \times \mathbb{P}(\text{risk-adjusted})}_{\mathrm{Stock\ you\ give}}$$
+$$\text{Put Value} = \underbrace{\text{PV}(K) \times \mathbb{P}(\text{exercise})}_{\mathrm{Money\ you\ get}} - \underbrace{S_0 \times \mathbb{P}^*(\text{risk-adjusted})}_{\mathrm{Stock\ you\ give}}$$
 
 
 Where:
