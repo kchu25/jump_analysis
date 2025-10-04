@@ -1,17 +1,88 @@
 # Essential Options Trading Concepts for Algo Trading
 
+## 0. Implied Volatility: The Foundation
+
+**Implied Volatility (IV)** is the market's expectation of future volatility, *backed out* from observed option prices. It's the volatility that makes the Black-Scholes formula match the market price.
+
+### Mathematical Definition
+Given market price $V_{\text{market}}$ for an option, IV is the $\sigma$ that solves:
+$V_{\text{market}} = V_{BS}(S, K, t, r, \sigma)$
+
+**There is no closed-form solution** — IV must be solved numerically (e.g., Newton-Raphson, bisection).
+
+### Key Insight: IV is Forward-Looking
+- **Realized Volatility**: What actually happened (historical)
+- **Implied Volatility**: What the market *expects* will happen (forward-looking)
+- **The disconnect**: IV often deviates from RV → trading opportunities
+
+| Concept | What It Measures | Formula | Trading Signal |
+|---------|-----------------|---------|----------------|
+| **Realized Vol (RV)** | Actual historical volatility | $\sigma_{RV} = \sqrt{252} \times \text{std}(r_{\text{daily}})$ | Backward-looking |
+| **Implied Vol (IV)** | Market's expected volatility | Solve $V_{\text{market}} = V_{BS}(\sigma)$ | Forward-looking |
+| **IV vs RV** | Pricing dislocation | Compare IV to RV | If IV > RV: options expensive; If IV < RV: options cheap |
+
+### The Volatility Surface
+
+**Critical fact**: IV is *not* a single number. Each strike $K$ and time to expiry $T$ has its own IV:
+$\sigma_{\text{IV}} = f(K, T)$
+
+This 3D surface has characteristic patterns:
+
+| Pattern | Description | Implication |
+|---------|-------------|-------------|
+| **Volatility Smile** | IV is U-shaped across strikes (higher at extremes) | Far OTM/ITM options priced with higher IV |
+| **Volatility Skew** | IV is asymmetric (puts typically > calls) | Fear premium: OTM puts cost more |
+| **Term Structure** | IV varies by expiry (near-term often > long-term) | Front-month options more sensitive to events |
+
+**For your strategy**: Post-jump, the entire surface shifts up (especially near-term strikes) → you're buying at elevated IV.
+
+### Market Regimes Shift the Surface
+
+The IV surface is *dynamic*:
+- **Normal times**: Relatively flat, stable
+- **Pre-earnings**: Front-month ATM IV spikes
+- **Post-jump/news**: Entire surface elevates, skew steepens
+- **Market crash**: Put skew becomes extreme
+
+**Algo implication**: You can't use static IV assumptions. Must track IV percentile or rank relative to history.
+
+### Systematic Trading Opportunities
+
+Many algos exploit IV dislocations:
+
+1. **Vol arbitrage**: Trade when IV ≠ expected RV
+2. **IV mean reversion**: Elevated IV tends to normalize
+3. **Term structure plays**: Front-month vs back-month IV spreads
+4. **Cross-asset vol**: When stock IV disconnects from index IV
+
+**Your situation**: After a jump, IV is elevated → buying options is expensive → need larger move to overcome the "vol premium" you paid.
+
+### What You Need to Track
+
+For algo trading:
+- **IV percentile**: Where is current IV vs 1-year range? (IVR formula in Section 3)
+- **IV skew**: Are OTM puts unusually expensive relative to ATM?
+- **Term structure**: Is front-month IV elevated vs next month?
+- **RV estimation**: Is actual volatility rising or falling?
+
+**Rule of thumb**: Avoid buying options when IVR > 70% unless your edge is exceptional.
+
+---
+
 ## 1. The Greeks: Risk Exposures
 
 | Greek | Formula | Range | Intuition | Algo Relevance |
 |-------|---------|-------|-----------|----------------|
-| **Delta (Δ)** | $\Delta = \frac{\partial V}{\partial S}$ | Put: $-1 < \Delta < 0$ | 1 usd stock move = $\|\Delta\|$ option move | Hedge ratio; Delta-neutral = no directional exposure |
+| **Delta (Δ)** | $\Delta = \frac{\partial V}{\partial S}$ | Put: $-1 < \Delta < 0$ | $1 stock move = $\|\Delta\|$ option move | Hedge ratio; Delta-neutral = no directional exposure |
 | **Gamma (Γ)** | $\Gamma = \frac{\partial^2 V}{\partial S^2}$ | Always positive | How fast Delta changes; high $\Gamma$ = unstable position | Peaks ATM near expiry; large moves blow up position |
-| **Theta (θ)** | $\theta = \frac{\partial V}{\partial t}$ | Always negative (long) | Lose $\|\theta\|$ per day from time passing | 0DTE options lose 20-50% in hours; theta kills same-day trades |
-| **Vega (ν)** | $\nu = \frac{\partial V}{\partial \sigma}$ | Always positive (long) | IV spike = option price up (even if stock flat) | Right on direction but lose on IV crush = common trap |
+| **Theta (θ)** | $\theta = \frac{\partial V}{\partial t}$ | Typically $-0.01$ to $-0.50$ ($/day) | Lose $\|\theta\|$ per day from time passing | 0DTE options lose 20-50% in hours; theta kills same-day trades |
+| **Vega (ν)** | $\nu = \frac{\partial V}{\partial \sigma}$ | Typically $0.01$ to $0.30$ ($/1% IV) | IV spike = option price up (even if stock flat) | Right on direction but lose on IV crush = common trap |
 
 **Notation remarks:**
-- $V$ = Option value/price (the dependent variable)
-- $S$ = Stock price (underlying asset price)
+- $V$ = Option value/price (the dependent variable, measured in $)
+- $S$ = Stock price (underlying asset price, in $)
+- $t$ = Time (measured in days for theta; note that Black-Scholes uses years, so $\theta_{BS} = \theta_{daily} \times 365$)
+- $\sigma$ = Implied volatility (IV), expressed as annualized standard deviation (e.g., 0.30 = 30% IV)
 - **Put Delta**: Negative because put value decreases when stock price increases
 - **Call Delta**: Would be positive ($0 < \Delta < 1$) because call value increases with stock price
 - **"Long"**: Refers to buying/owning options (as opposed to selling/writing). Long options have negative theta (you lose money from time decay) and positive vega (you benefit from IV increases)
