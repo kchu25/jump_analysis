@@ -58,7 +58,7 @@ $$Ke^{-rt}$$
 **Intuition**: Money in the future is worth less than money today. If $K = 100$ and you receive it in 1 year at 5% interest, its present value is $100 \times e^{-0.05 \times 1} \approx 95.12$.
 
 **Example**:
-- Strike $K = \$100$
+- Strike $K = 100$
 - Time $t = 0.25$ years (3 months)
 - Rate $r = 0.05$
 - Present value: $100 \times e^{-0.05 \times 0.25} = 100 \times 0.9876 = 98.76$
