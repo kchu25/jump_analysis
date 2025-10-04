@@ -55,7 +55,7 @@ $$Ke^{-rt}$$
 - $r$ = Risk-free interest rate (e.g., 5% = 0.05)
 - $t$ = Time to expiration (in years)
 
-**Intuition**: Money in the future is worth less than money today. If $K = \$100$ and you receive it in 1 year at 5% interest, its present value is $100 \times e^{-0.05 \times 1} \approx \$95.12$.
+**Intuition**: Money in the future is worth less than money today. If $K = 100$ and you receive it in 1 year at 5% interest, its present value is $100 \times e^{-0.05 \times 1} \approx \$95.12$.
 
 **Example**:
 - Strike $K = \$100$
