@@ -8,6 +8,7 @@ using Dates
 using Plots
 using Statistics
 using Printf
+using Base.Threads
 
 # =============================
 # Core Data Structures and Types
@@ -89,10 +90,10 @@ function load_market_data(month::Int, day::Int, ticker::String, params::TradingP
     
     # Filter by time window
     mask = Time(params.time_start) .<= times_raw .<= Time(params.time_end)
-    times = times_raw[mask]
-    prices = d.close[mask]
-    volumes = d.volume[mask]
-    
+    times = @view times_raw[mask]
+    prices = @view d.close[mask]
+    volumes = @view d.volume[mask]
+
     if length(prices) < 2
         return nothing
     end
@@ -102,15 +103,15 @@ end
 
 """Detect jumps based on price change magnitude and volume confirmation"""
 function detect_jumps_magnitude(prices, volumes=nothing; threshold_pct=2.0, volume_threshold=1.5, window_size=20)
-    returns = diff(prices) ./ prices[1:end-1] * 100  # Percentage returns
+    returns = @views diff(prices) ./ prices[1:end-1] * 100  # Percentage returns
     
     # Base threshold detection
     jump_candidates = findall(x -> abs(x) > threshold_pct, returns) .+ 1
     
     # Volume confirmation if available
     if volumes !== nothing && length(volumes) == length(prices)
-        vol_ma = [mean(volumes[max(1,i-window_size):i]) for i in (window_size+1):length(volumes)]
-        volume_spikes = findall(x -> x > volume_threshold, volumes[(window_size+1):end] ./ vol_ma) .+ window_size
+        vol_ma = @views [mean(volumes[max(1,i-window_size):i]) for i in (window_size+1):length(volumes)]
+        volume_spikes = @views findall(x -> x > volume_threshold, volumes[(window_size+1):end] ./ vol_ma) .+ window_size
         
         # Jumps confirmed by volume
         jump_indices = intersect(jump_candidates, volume_spikes)
@@ -523,6 +524,7 @@ end
     compute_jump_trade_stats(start_month::Int, start_day::Int, end_month::Int, end_day::Int, ticker; kwargs...)
 
 Loop over date range, detect jumps and compute trades, return aggregated results and statistics.
+**Now parallelized using threading for better performance on multi-core systems.**
 
 # Arguments
 - `start_month::Int`: Starting month (1-12)
@@ -531,6 +533,11 @@ Loop over date range, detect jumps and compute trades, return aggregated results
 - `end_day::Int`: Ending day
 - `ticker::String`: Stock ticker symbol
 - All other arguments are passed as TradingParams (see TradingParams constructor for defaults)
+
+# Performance
+- Uses `Threads.@threads` to process dates in parallel
+- Performance scales with available CPU cores
+- For large date ranges (>100 days), consider `compute_jump_trade_stats_distributed`
 
 # Returns
 - Tuple of (trades_df::DataFrame, stats::Dict) with aggregated statistics
@@ -541,19 +548,35 @@ function compute_jump_trade_stats(start_month::Int, start_day::Int,
     # Create trading parameters from kwargs
     params = TradingParams(; kwargs...)
     
-    # Collect trades across date range
-    all_trades = DataFrame()
+    # Collect trades across date range (parallelized)
     start_date = Date(params.year, start_month, start_day)
     end_date = Date(params.year, end_month, end_day)
+    date_range = collect(start_date:Day(1):end_date)
+    n_dates = length(date_range)
     
-    for d in start_date:Day(1):end_date
+    println("Processing $(n_dates) dates using $(Threads.nthreads()) threads...")
+    start_time = time()
+    
+    # Parallel processing using threads
+    trades_per_date = Vector{DataFrame}(undef, n_dates)
+    
+    Threads.@threads for i in 1:n_dates
+        d = date_range[i]
         m = Dates.month(d)
         dy = Dates.day(d)
-        day_trades = detect_trades_for_date(m, dy, ticker; kwargs...)
+        trades_per_date[i] = detect_trades_for_date(m, dy, ticker; kwargs...)
+    end
+    
+    # Combine non-empty results
+    all_trades = DataFrame()
+    for day_trades in trades_per_date
         if !isempty(day_trades)
             append!(all_trades, day_trades)
         end
     end
+    
+    elapsed_time = time() - start_time
+    println("✅ Parallel processing completed in $(round(elapsed_time, digits=2)) seconds")
 
     # Compute statistics
     stats = compute_trade_statistics(all_trades)
@@ -562,5 +585,95 @@ function compute_jump_trade_stats(start_month::Int, start_day::Int,
     print_trade_statistics(ticker, start_month, start_day, end_month, end_day, params.year, stats)
 
     return all_trades, stats
+end
+
+"""
+    compute_jump_trade_stats_distributed(start_month::Int, start_day::Int, end_month::Int, end_day::Int, ticker; kwargs...)
+
+Distributed version of compute_jump_trade_stats for processing large date ranges across multiple processes.
+Requires: `using Distributed; addprocs(n)` where n is number of worker processes.
+
+# Arguments
+- Same as compute_jump_trade_stats
+
+# Returns
+- Tuple of (trades_df::DataFrame, stats::Dict) with aggregated statistics
+
+# Example
+```julia
+using Distributed
+addprocs(4)  # Add 4 worker processes
+@everywhere include("try_mag_jump.jl")
+trades, stats = compute_jump_trade_stats_distributed(9, 1, 9, 30, "TSLL", threshold_pct=2.0)
+```
+"""
+function compute_jump_trade_stats_distributed(start_month::Int, start_day::Int, 
+                                            end_month::Int, end_day::Int, 
+                                            ticker::String; kwargs...)
+    # Create trading parameters from kwargs
+    params = TradingParams(; kwargs...)
+    
+    # Collect trades across date range using distributed computing
+    start_date = Date(params.year, start_month, start_day)
+    end_date = Date(params.year, end_month, end_day)
+    date_range = collect(start_date:Day(1):end_date)
+    
+    # Check if Distributed is available
+    if !isdefined(Main, :Distributed) || nprocs() == 1
+        @warn "Distributed computing not available or no worker processes. Using threaded version instead."
+        return compute_jump_trade_stats(start_month, start_day, end_month, end_day, ticker; kwargs...)
+    end
+    
+    # Distributed processing
+    @eval using Distributed
+    trades_per_date = @distributed (vcat) for d in date_range
+        m = Dates.month(d)
+        dy = Dates.day(d)
+        day_trades = detect_trades_for_date(m, dy, ticker; kwargs...)
+        isempty(day_trades) ? DataFrame() : day_trades
+    end
+    
+    # Filter out empty DataFrames and combine
+    all_trades = trades_per_date
+    
+    # Compute statistics
+    stats = compute_trade_statistics(all_trades)
+    
+    # Print summary
+    print_trade_statistics(ticker, start_month, start_day, end_month, end_day, params.year, stats)
+
+    return all_trades, stats
+end
+
+"""
+    get_threading_info()
+
+Display information about available threading and processing resources.
+"""
+function get_threading_info()
+    println("Threading and Parallel Processing Information:")
+    println("=" * "="^50)
+    println("Available threads: $(Threads.nthreads())")
+    println("Available processes: $(nprocs())")
+    println("Worker processes: $(nprocs() - 1)")
+    println()
+    println("Performance recommendations:")
+    if Threads.nthreads() == 1
+        println("⚠️  Only 1 thread available. Set JULIA_NUM_THREADS=N before starting Julia for threading benefits.")
+    else
+        println("✅ $(Threads.nthreads()) threads available for parallel processing.")
+    end
+    
+    if nprocs() == 1
+        println("💡 For distributed processing, run: using Distributed; addprocs(N)")
+    else
+        println("✅ $(nprocs() - 1) worker processes available for distributed computing.")
+    end
+    
+    println()
+    println("Usage examples:")
+    println("• Threaded (current): compute_jump_trade_stats(...)")
+    println("• Distributed: compute_jump_trade_stats_distributed(...)")
+    println("=" * "="^50)
 end
 
