@@ -131,6 +131,21 @@ $$dB(t) = O(\sqrt{dt}) \quad \text{NOT } O(dt)$$
 
 This is because variance scales with $dt$, so standard deviation scales with $\sqrt{dt}$.
 
+Note: 
+- **Linear variance growth**: Even though $dt$ is small, the *linearity* matters - it tells us how uncertainty accumulates over finite time (grows as $\sqrt{T}$​, not $T$)
+
+- The $\sqrt{dt}$$​ scaling - why it's crucial:
+    - It makes $(dB)^2=O(dt)$ non-negligible (the foundation of Itô calculus).
+    - Diffusion dominates drift at small time scales
+    - Random accumulation is sublinear ($\sqrt{T}$, not $T$)
+    - Forces second-order terms in the chain rule
+
+- drunk-walking analogy: - after $N$ random steps, 
+    you're $\sqrt{N}$​ blocks away, not $N$ blocks. 
+    This captures why the $\sqrt{t}$​ scaling is fundamental to understanding random motion!
+
+**Drunk-walking analogy:** After $N$ random steps (each step ±1 block with equal probability), you're typically $\sqrt{N}$ blocks away from where you started, not $N$ blocks away. This $\sqrt{N}$ scaling captures the "inefficiency" of random exploration - you don't make linear progress because you keep randomly changing direction. The same principle applies to Brownian motion: over time $t$, the typical displacement is $O(\sqrt{t})$, not $O(t)$.
+
 ## 5. Stochastic Differential Equations (SDEs)
 
 A typical SDE looks like:
