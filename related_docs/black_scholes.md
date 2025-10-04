@@ -294,8 +294,13 @@ This is why **implied volatility varies by strike and expiry** (the volatility s
 **Black-Scholes answers**: What's the fair price for uncertain future payoffs?
 
 **The formula structure**:
+$\text{Put Value} = \underbrace{\text{PV}(K) \times \mathbb{P}(\text{exercise})}_{\text{Money you get}} - \underbrace{S_0 \times \mathbb{P}^*(\text{risk-adjusted})}_{\text{Stock you give}}$
 
-$$\text{Put Value} = \underbrace{\text{PV(Strike)} \times P(\text{exercise})}_{\mathrm{Money\ you\ get}} - \underbrace{\text{Stock} \times P(\text{risk-adjusted})}_{\mathrm{Stock\ you\ give}}$$
+Where:
+- $\text{PV}(K)$ = **Present Value** of strike price = $Ke^{-rt}$ (future money discounted to today)
+- $\mathbb{P}(\text{exercise})$ = **Probability** of exercising the option = $N(-d_2)$ for puts
+- $S_0$ = Current stock price
+- $\mathbb{P}^*(\text{risk-adjusted})$ = **Risk-neutral probability** = $N(-d_1)$ for puts (probability used for hedging)
 
 **Core insights**:
 1. Options are worth more when the future is more uncertain (higher $\sigma$)
