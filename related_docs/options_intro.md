@@ -9,6 +9,13 @@
 | **Theta (θ)** | $\theta = \frac{\partial V}{\partial t}$ | Always negative (long) | Lose $\|\theta\|$ per day from time passing | 0DTE options lose 20-50% in hours; theta kills same-day trades |
 | **Vega (ν)** | $\nu = \frac{\partial V}{\partial \sigma}$ | Always positive (long) | IV spike = option price up (even if stock flat) | Right on direction but lose on IV crush = common trap |
 
+**Notation remarks:**
+- $V$ = Option value/price (the dependent variable)
+- $S$ = Stock price (underlying asset price)
+- **Put Delta**: Negative because put value decreases when stock price increases
+- **Call Delta**: Would be positive ($0 < \Delta < 1$) because call value increases with stock price
+- **"Long"**: Refers to buying/owning options (as opposed to selling/writing). Long options have negative theta (you lose money from time decay) and positive vega (you benefit from IV increases)
+
 ### Key Greek Relationships
 - **Gamma peaks**: ATM options near expiration
 - **Theta accelerates**: Exponentially near expiry (last week: 30-50% decay)
